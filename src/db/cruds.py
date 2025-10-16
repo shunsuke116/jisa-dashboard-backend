@@ -9,7 +9,7 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func, desc
 from src.app.schemas.objects import DeliveryHistoryDisplayed
-from src.db.models import DeliveryHistory, Product, Orders
+from src.db.models import DeliveryHistory, Product, Orders, Review
 
 from src.db import initialize
 from src.db.database import engine
@@ -136,24 +136,62 @@ def select_delivery_history_by_order_id(db: Session, order_id: str):
 
 
 def select_product_all(db: Session):
-# ---------------Application 課題Lv2 編集ここから---------------
-# 必要なimportがあればapi.pyのファイル先頭部分に追加してよい
-    return None
-# ---------------Application 課題Lv2 編集ここまで---------------
+    try:
+        result = (
+            db.query(
+                Product.product_id,
+                Product.product_name,
+                Product.store_name,
+                Product.product_price,
+                Product.product_image,
+            )
+            .all()
+        )
+    except Exception as e:
+        logger.error("select_product_all error: %s", e)
+        return None
+    
+    return result
 
 
 def select_product_info(db: Session, offset: int, limit: int):
-# ---------------Application 課題Lv2 編集ここから---------------
-# 必要なimportがあればapi.pyのファイル先頭部分に追加してよい
-    return None
-# ---------------Application 課題Lv2 編集ここまで---------------
+    try:
+        query = db.query(
+            Product.product_id,
+            Product.product_name,
+            Product.store_name,
+            Product.product_price,
+        )
+        
+        if offset is not None:
+            query = query.offset(offset)
+        if limit is not None:
+            query = query.limit(limit)
+            
+        result = query.all()
+        
+    except Exception as e:
+        logger.error("select_product_info error: %s", e)
+        return None
+    
+    return result
 
 
 def select_product_image_by_id(db: Session, product_ids: List[int]):
-# ---------------Application 課題Lv2 編集ここから---------------
-# 必要なimportがあればapi.pyのファイル先頭部分に追加してよい
-    return None
-# ---------------Application 課題Lv2 編集ここまで---------------
+    try:
+        result = (
+            db.query(
+                Product.product_id,
+                Product.product_image,
+            )
+            .filter(Product.product_id.in_(product_ids))
+            .all()
+        )
+    except Exception as e:
+        logger.error("select_product_image_by_id error: %s", e)
+        return None
+    
+    return result
 
 
 def create_order_item(db: Session, product_id: int, order_num: int):
@@ -161,6 +199,7 @@ def create_order_item(db: Session, product_id: int, order_num: int):
         db.begin()
         db.query(Orders).delete()
         time.sleep(10)
+        db.query(Orders).delete()
         db.add(Orders(product_id=product_id, order_num=order_num))
         db.commit()
 
@@ -185,6 +224,84 @@ def select_order_all(db: Session):
     
     return result
 
-# ------AI Coding 課題Lv1 編集ここから------
 
-# ------AI Coding 課題Lv1 編集ここまで------
+# ============ Application 課題Lv2: レビュー関連のCRUD処理 ============
+
+def create_review(db: Session, product_id: int, user_name: str, rating: int, comment: Optional[str] = None):
+    """
+    レビューをDBに登録し、作成された review_id を返却する。
+    
+    Args:
+        db: データベースセッション
+        product_id: 商品ID
+        user_name: ユーザー名
+        rating: 評価（1-5）
+        comment: コメント（任意）
+        
+    Returns:
+        int: 作成されたレビューID（成功時） / None（失敗時）
+    """
+    logger.debug(f"create_review start. [product_id={product_id}, user_name={user_name}, rating={rating}]")
+    
+    try:
+        # ============ Application 課題Lv2 編集ここから ============
+        # TODO: Reviewインスタンスを作成してください
+        review = Review(
+        )
+        pass
+        # ============ Application 課題Lv2 編集ここまで ============
+        
+        db.add(review)
+        db.commit()
+        db.refresh(review)
+        
+        logger.debug(f"create_review end. [review_id={review.review_id}]")
+        return review.review_id
+        
+    except Exception as e:
+        logger.error(f"create_review error: {e}")
+        db.rollback()
+        return None
+
+
+def select_reviews_by_product(db: Session, product_id: int, limit: Optional[int] = None, offset: Optional[int] = None):
+    """
+    指定商品IDのレビュー一覧を取得する。
+    
+    Args:
+        db: データベースセッション
+        product_id: 商品ID
+        limit: 取得件数上限（任意）
+        offset: 取得開始位置（任意）
+        
+    Returns:
+        List: レビューのリスト（成功時） / None（失敗時）
+    """
+    logger.debug(f"select_reviews_by_product start. [product_id={product_id}, limit={limit}, offset={offset}]")
+    
+    try:
+        # ============ Application 課題Lv2 編集ここから ============
+        # TODO: 指定商品IDのレビュー一覧を取得するクエリを作成してください
+        query = db.query(
+        )
+        pass
+        # ============ Application 課題Lv2 編集ここまで ============
+        
+        query = query.filter(Review.product_id == product_id)
+        query = query.order_by(desc(Review.created_at))
+        
+        if offset is not None:
+            query = query.offset(offset)
+        if limit is not None:
+            query = query.limit(limit)
+        
+        result = query.all()
+        
+        logger.debug(f"select_reviews_by_product end. [count={len(result)}]")
+        return result
+        
+    except Exception as e:
+        logger.error(f"select_reviews_by_product error: {e}")
+        return None
+
+# ============ レビュー関連のCRUD処理ここまで ============

@@ -1,6 +1,6 @@
 import datetime
 
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -37,25 +37,43 @@ class ConversationDisplayed(BaseModel):
     response: str
 
 class Product(BaseModel):
-# ------Application 課題Lv2 編集ここから------
-    hoge: str #この項目は削除して修正すること
-# ------Application 課題Lv2 編集ここまで------
+    product_id: int
+    product_name: str
+    store_name: str
+    product_price: int
+    product_image: str
 
 class ProductInfo(BaseModel):
-# ------Application 課題Lv2 編集ここから------
-    hoge: str #この項目は削除して修正すること
-# ------Application 課題Lv2 編集ここまで------
+    product_id: int
+    product_name: str
+    store_name: str
+    product_price: int
 
 class ProductImage(BaseModel):
-# ------Application 課題Lv2 編集ここから------
-    hoge: str #この項目は削除して修正すること
-# ------Application 課題Lv2 編集ここまで------
+    product_id: int
+    product_image: str
 
 class Order(BaseModel):
     id: int
     product_id: int
     order_num: int
 
-# ------AI Coding 課題Lv1 編集ここから------
 
-# ------AI Coding 課題Lv1 編集ここまで------
+# ============ Application 課題Lv2: レビュー関連スキーマ ============
+
+class ReviewCreate(BaseModel):
+    """レビュー投稿用スキーマ"""
+    # ============ Application 課題Lv2 編集ここから ============
+    # TODO: API仕様書を参考にして ReviewCreate スキーマを定義してください
+    pass
+    # ============ Application 課題Lv2 編集ここまで ============
+
+
+class ReviewDisplayed(BaseModel):
+    """レビュー表示用スキーマ"""
+    # ============ Application 課題Lv2 編集ここから ============
+    # TODO: API仕様書を参考にして ReviewDisplayed スキーマを定義してください
+    pass
+    # ============ Application 課題Lv2 編集ここまで ============
+
+# ============ レビュー関連スキーマここまで ============

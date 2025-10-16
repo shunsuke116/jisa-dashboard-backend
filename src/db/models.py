@@ -10,7 +10,7 @@ from sqlalchemy import (
     JSON,
 )
 from sqlalchemy.orm import relation, relationship
-from sqlalchemy.sql.functions import current_timestamp
+from sqlalchemy.sql.functions import current_timestamp, func
 from sqlalchemy.sql.sqltypes import Boolean
 from sqlalchemy.types import JSON, LargeBinary
 from src.db.database import Base
@@ -56,16 +56,34 @@ class DeliveryHistory(Base):
     )
 
 class Product(Base):
-# ------Application 課題Lv2 編集ここから------
-    # 下記は削除して修正すること
-    __tablename__ = "hoge"
-    
-    hoge = Column(
-        String(10),
+    __tablename__ = "product"
+
+    product_id = Column(
+        Integer,
         primary_key=True,
-        comment="hoge",
+        autoincrement=True,
+        nullable=False,
+        comment="商品ID",
     )
-# ------Application 課題Lv2 編集ここまで------
+    product_name = Column(
+        String(50),
+        comment="商品名",
+    )
+    store_name = Column(
+        String(50),
+        nullable=False,
+        comment="店名",
+    )
+    product_price = Column(
+        Integer,
+        nullable=False,
+        comment="金額",
+    )
+    product_image = Column(
+        LargeBinary,
+        nullable=True,
+        comment="商品画像",
+    )
 
 class Orders(Base):
     __tablename__ = "orders"
@@ -86,6 +104,12 @@ class Orders(Base):
         comment="個数",
     )
 
-# ------AI Coding 課題Lv1 編集ここから------
 
-# ------AI Coding 課題Lv1 編集ここまで------
+class Review(Base):
+    """レビューテーブル - Application課題Lv2で追加"""
+    __tablename__ = "review"
+
+    # ============ Application 課題Lv2 編集ここから ============
+    # TODO: DB仕様書を参考にして Review クラスのカラムを定義してください
+    pass
+    # ============ Application 課題Lv2 編集ここまで ============
