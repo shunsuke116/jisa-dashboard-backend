@@ -46,3 +46,22 @@ class DBConfigurations:
             f"mysql://{mysql_username}:{mysql_password}@{mysql_host}/{mysql_dbname}"
         )
         connect_args = {}
+
+
+class LambdaConfigurations:
+    lambda_function_arn = None
+    
+    is_dev = os.getenv("ENV_TYPE") == "dev"
+    
+    if is_dev:
+        # 開発環境: .env から取得
+        lambda_function_arn = os.getenv("LAMBDA_FUNCTION_ARN")
+        logger.info(f"Lambda ARN (dev): {lambda_function_arn}")
+    else:
+        # 本番環境: SSMパラメータストアから取得
+        ssm = boto3.client("ssm", region_name="us-west-2")
+        lambda_function_arn = ssm.get_parameter(
+            Name="LAMBDA_FUNCTION_ARN", 
+            WithDecryption=False
+        )["Parameter"]["Value"]
+        logger.info(f"Lambda ARN (prod): {lambda_function_arn}")

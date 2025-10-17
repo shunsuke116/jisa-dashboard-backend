@@ -38,6 +38,7 @@ from src.app.schemas.objects import (
     ReviewDisplayed,
 )
 from src.app.exceptions.db_error import SqlExecutionException
+from src.configurations import LambdaConfigurations
 from src.db import cruds
 from src.db.database import get_db
 from src.utils.chat import (
@@ -520,12 +521,12 @@ async def get_ai_review_summary(
         prompt = create_review_summary_prompt(reviews, product_id)
 
         # Step3: Lambda関数を呼び出す
-        lambda_arn = os.environ.get("LAMBDA_FUNCTION_ARN")
+        lambda_arn = LambdaConfigurations.lambda_function_arn
 
         if not lambda_arn:
             raise HTTPException(
                 status_code=500,
-                detail="Lambda関数のARNが環境変数に設定されていません"
+                detail="Lambda関数のARNが設定されていません"
             )
         
         lambda_client = boto3.client('lambda', region_name='us-west-2')
