@@ -10,7 +10,9 @@ import requests
 import json
 import base64
 import os        
-import boto3     
+import boto3
+from PIL import Image
+from io import BytesIO     
 
 from fastapi import (
     APIRouter,
@@ -53,6 +55,45 @@ logger = logging.getLogger(__name__)
 # ---------------編集ここまで---------------
 
 router = APIRouter()
+
+
+# 画像圧縮関数
+def compress_image(image_data: bytes, max_width: int = 200, quality: int = 60) -> bytes:
+    """
+    画像を圧縮してサイズを削減する
+    
+    Args:
+        image_data: 元の画像バイナリデータ
+        max_width: 最大幅（ピクセル）
+        quality: JPEG品質（1-100、低いほど圧縮率が高い）
+    
+    Returns:
+        圧縮された画像のバイナリデータ
+    """
+    try:
+        # バイナリデータからPIL Imageオブジェクトを作成
+        img = Image.open(BytesIO(image_data))
+        
+        # RGBモードに変換（JPEG保存のため）
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # アスペクト比を維持してリサイズ
+        if img.width > max_width:
+            ratio = max_width / img.width
+            new_height = int(img.height * ratio)
+            img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+        
+        # メモリ上で圧縮
+        output = BytesIO()
+        img.save(output, format='JPEG', quality=quality, optimize=True)
+        compressed_data = output.getvalue()
+        
+        return compressed_data
+    except Exception as e:
+        logger.error(f"Image compression error: {e}")
+        # 圧縮に失敗した場合は元の画像を返す
+        return image_data
 
 
 @router.get(
@@ -275,7 +316,7 @@ def get_product_list_init(db: Session = Depends(get_db)):
     
     if result is None:
         raise SqlExecutionException()
-
+    
     # レスポンスデータ作成
     response = ResponseModel[str](
         result_code="N001",
@@ -347,13 +388,23 @@ def get_product_list_image(product_ids: List[int]= Query(...), db: Session = Dep
     if product_image_result is None:
         raise SqlExecutionException()
     
-    # 画像データをbase64にエンコード
+    # 画像データを圧縮してbase64にエンコード
     product_base64_image_result = []
     for product in product_image_result:
-        product_base64_image_result.append(ProductImage(
-            product_id = product["product_id"],
-            product_image = base64.b64encode(product["product_image"])
-        ))
+        # 画像がNoneの場合はスキップまたはNoneを設定
+        if product["product_image"] is None:
+            product_base64_image_result.append(ProductImage(
+                product_id = product["product_id"],
+                product_image = None
+            ))
+        else:
+            # 画像を圧縮（幅200px、品質60%）
+            compressed_image = compress_image(product["product_image"], max_width=200, quality=60)
+            
+            product_base64_image_result.append(ProductImage(
+                product_id = product["product_id"],
+                product_image = base64.b64encode(compressed_image)
+            ))
     
     # レスポンスデータ作成
     response = ResponseModel[List[ProductImage]](
@@ -520,54 +571,55 @@ async def get_ai_review_summary(
         # TODO: create_review_summary_prompt を実装してください
         prompt = create_review_summary_prompt(reviews, product_id)
 
-        # Step3: Lambda関数を呼び出す
-        lambda_arn = LambdaConfigurations.lambda_function_arn
-
-        if not lambda_arn:
+        # Step3: Lambda関数を呼び出す (Function URL経由)
+        lambda_url = LambdaConfigurations.lambda_function_arn
+        
+        if not lambda_url:
             raise HTTPException(
                 status_code=500,
-                detail="Lambda関数のARNが設定されていません"
+                detail="Lambda関数のURLが設定されていません"
             )
         
-        lambda_client = boto3.client('lambda', region_name='us-west-2')
-        
+        # HTTPSリクエストで呼び出し (Function URL形式)
+        # Function URLはJSONボディをevent['body']に文字列として格納する
         payload = {
-            "body": json.dumps({
-                "prompt": prompt
-            })
+            "prompt": prompt
         }
         
-        lambda_response = lambda_client.invoke(
-            FunctionName=lambda_arn,
-            InvocationType='RequestResponse',
-            Payload=json.dumps(payload)
-        )
-        
-        # レスポンス解析
-        response_payload = json.loads(lambda_response['Payload'].read())
-        logger.info(f"Lambda response: {response_payload}")
-        
-        if 'body' in response_payload:
-            body = json.loads(response_payload['body'])
-            if body.get('result_code') == 'N001':
-                summary = body['result_content']['summary']
-        # ============ Application 課題Lv3 編集ここから ============                
-                # TODO: 成功時のレスポンスを作成してください
-                response = ResponseModel[dict](
-                    
-                )
-        # ============ Application 課題Lv3 編集ここまで ============ 
-                logger.info(f"AI summary generated successfully. review_count={len(reviews)}")
-                return response
-            else:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Lambda関数がエラーを返しました: {body.get('error_message')}"
-                )
-        else:
+        try:
+            lambda_response = requests.post(
+                lambda_url,
+                json=payload,
+                verify=False,
+                timeout=30
+            )
+            lambda_response.raise_for_status()
+            response_payload = lambda_response.json()
+        except requests.RequestException as e:
+            logger.error(f"Lambda呼び出しエラー: {e}")
             raise HTTPException(
                 status_code=500,
-                detail="Lambda関数のレスポンス形式が不正です"
+                detail=f"Lambda関数の呼び出しに失敗しました: {str(e)}"
+            )
+        
+        logger.info(f"Lambda response: {response_payload}")
+        
+        # レスポンス解析 (Function URLは直接JSONを返す)
+        if response_payload.get('result_code') == 'N001':
+            summary = response_payload['result_content']['summary']
+            # ============ Application 課題Lv3 編集ここから ============                
+            # TODO: 成功時のレスポンスを作成してください
+            response = ResponseModel[dict](
+
+            )
+            # ============ Application 課題Lv3 編集ここまで ============ 
+            logger.info(f"AI summary generated successfully. review_count={len(reviews)}")
+            return response
+        else:
+            error_msg = response_payload.get('error_message', 'Unknown error')
+            raise HTTPException(
+                status_code=500,
+                detail=f"Lambda関数がエラーを返しました: {error_msg}"
             )
         
     except HTTPException:

@@ -111,12 +111,12 @@ class Review(Base):
 
     # ============ Application 課題Lv2 編集ここから ============
     # TODO: DB仕様書を参考にして Review クラスのカラムを定義してください
-    # 最小限の実装: プライマリーキーのみ定義してサーバー起動を可能にする
+    # 最小限の実装として review_id カラムのみ定義済
     review_id = Column(
         Integer,
         primary_key=True,
         autoincrement=True,
         nullable=False,
-        comment="レビューID（仮実装）",
+        comment="レビューID",
     )
     # ============ Application 課題Lv2 編集ここまで ============

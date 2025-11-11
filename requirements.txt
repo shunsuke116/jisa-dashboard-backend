@@ -34,3 +34,4 @@ uvloop==0.15.2
 watchgod==0.7
 websockets==9.1
 zipp==3.8.1
+Pillow==10.0.0

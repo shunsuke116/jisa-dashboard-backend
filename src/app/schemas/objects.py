@@ -51,7 +51,7 @@ class ProductInfo(BaseModel):
 
 class ProductImage(BaseModel):
     product_id: int
-    product_image: str
+    product_image: Optional[str]
 
 class Order(BaseModel):
     id: int
@@ -75,5 +75,6 @@ class ReviewDisplayed(BaseModel):
     # TODO: API仕様書を参考にして ReviewDisplayed スキーマを定義してください
     pass
     # ============ Application 課題Lv2 編集ここまで ============
-
+    class Config:
+        orm_mode = True
 # ============ レビュー関連スキーマここまで ============

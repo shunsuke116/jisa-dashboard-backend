@@ -198,7 +198,7 @@ def create_order_item(db: Session, product_id: int, order_num: int):
     try:
         db.begin()
         db.query(Orders).delete()
-        time.sleep(10)
+        ##time.sleep(10) 2024課題の名残
         db.query(Orders).delete()
         db.add(Orders(product_id=product_id, order_num=order_num))
         db.commit()
@@ -230,14 +230,6 @@ def select_order_all(db: Session):
 def create_review(db: Session, product_id: int, user_name: str, rating: int, comment: Optional[str] = None):
     """
     レビューをDBに登録し、作成された review_id を返却する。
-    
-    Args:
-        db: データベースセッション
-        product_id: 商品ID
-        user_name: ユーザー名
-        rating: 評価（1-5）
-        comment: コメント（任意）
-        
     Returns:
         int: 作成されたレビューID（成功時） / None（失敗時）
     """
@@ -266,14 +258,7 @@ def create_review(db: Session, product_id: int, user_name: str, rating: int, com
 
 def select_reviews_by_product(db: Session, product_id: int, limit: Optional[int] = None, offset: Optional[int] = None):
     """
-    指定商品IDのレビュー一覧を取得する。
-    
-    Args:
-        db: データベースセッション
-        product_id: 商品ID
-        limit: 取得件数上限（任意）
-        offset: 取得開始位置（任意）
-        
+    指定商品IDのレビュー一覧を取得する。   
     Returns:
         List: レビューのリスト（成功時） / None（失敗時）
     """
@@ -305,3 +290,52 @@ def select_reviews_by_product(db: Session, product_id: int, limit: Optional[int]
         return None
 
 # ============ レビュー関連のCRUD処理ここまで ============
+
+
+# ============ 初期化関連の処理 ============
+
+def initialize_table(db: Session):
+    try:
+        initialize.create_tables(engine=engine, checkfirst=True)
+        initialize.initialize_table(engine, checkfirst=True)
+        db.query(Orders).delete()
+
+    except Exception as e:
+        logger.error(f"initialize_table error: {e}")
+        return None
+    
+    return "success initialize."
+
+# for SQLite debug
+def create_product_item_initialize(db: Session):
+    try:
+        initialize.create_tables(engine=engine, checkfirst=True)
+        initialize.initialize_table(engine, checkfirst=True)
+        image_file_path = './data/food_sample_image.jpg'
+        with open(image_file_path, 'rb') as image_file:
+            image_data = image_file.read()
+        
+        db.query(Product).delete()
+        # 100個の商品データを挿入
+        products = []
+        product_names = ["スパイシーツナロール", "マルゲリータピザ", "鶏の照り焼き"]
+        store_names = ["寿司屋", "ピザハウス", "和食グリル"]
+        prices = [1200, 1500, 1300]
+        
+        for i in range(100):
+            idx = i % 3
+            db.add(Product(
+                product_name=product_names[idx],
+                store_name=store_names[idx],
+                product_price=prices[idx],
+                product_image=image_data
+            ))
+        
+        db.commit()
+        logger.info("Inserted 100 products successfully")
+
+    except Exception as e:
+        logger.error(f"create_product_item_initialize error: {e}")
+        return None
+    
+    return "success create product items."
