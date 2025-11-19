@@ -119,4 +119,31 @@ class Review(Base):
         nullable=False,
         comment="レビューID",
     )
+    product_id = Column(
+        Integer,
+        nullable=False,
+        comment="商品ID",
+    )
+    user_name = Column(
+        String(255),
+        nullable=False,
+        comment="ユーザ名",
+    )
+    rating = Column(
+        Integer,
+        nullable=False,
+        comment="評価（1～5）",
+    )
+    comment = Column(
+        Text,
+        nullable=True,
+        comment="コメント",
+    )
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=current_timestamp(),
+        comment="投稿日時",
+    )
+    #LLM使用
     # ============ Application 課題Lv2 編集ここまで ============

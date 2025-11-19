@@ -473,7 +473,11 @@ def post_review_add(review: ReviewCreate, db: Session = Depends(get_db)):
     # ============ Application 課題Lv2 編集ここから ============
     # TODO: cruds.create_review を呼び出してレビューを登録してください
     review_id = cruds.create_review(
-        
+        db=db,
+        product_id=review.product_id,
+        user_name=review.user_name,
+        rating=review.rating,
+        comment=review.comment,
     )
     
     if review_id is None:
@@ -481,7 +485,9 @@ def post_review_add(review: ReviewCreate, db: Session = Depends(get_db)):
     
     # TODO: レスポンスデータを作成してください
     response = ResponseModel[int](
-        
+        result_code="N001",
+        result_msg="正常終了",
+        result_content=review_id,
     )
     # ============ Application 課題Lv2 編集ここまで ============
     
@@ -507,7 +513,10 @@ def get_review_list(
     # ============ Application 課題Lv2 編集ここから ============
     # TODO: cruds.select_reviews_by_product を呼び出してレビュー一覧を取得してください
     reviews = cruds.select_reviews_by_product(
-        
+        db,
+        product_id=product_id,
+        limit=limit,
+        offset=offset,
     )
 
     if reviews is None:
@@ -515,7 +524,9 @@ def get_review_list(
 
     # TODO: レスポンスデータを作成してください
     response = ResponseModel[List[ReviewDisplayed]](
-        
+            result_code="N001",
+            result_msg="正常終了",
+            result_content=reviews,
     )
     # ============ Application 課題Lv2 編集ここまで ============
     
