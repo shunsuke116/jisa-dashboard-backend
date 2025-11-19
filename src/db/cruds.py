@@ -14,6 +14,7 @@ from src.db.models import DeliveryHistory, Product, Orders, Review
 from src.db import initialize
 from src.db.database import engine
 
+
 import logging
 logger = logging.getLogger(__name__)
 fh = logging.FileHandler(filename='log/uvicorn_error.log', encoding='utf-8', mode='a')
@@ -239,6 +240,10 @@ def create_review(db: Session, product_id: int, user_name: str, rating: int, com
         # ============ Application 課題Lv2 編集ここから ============
         # TODO: Reviewインスタンスを作成してください
         review = Review(
+            product_id=product_id,
+            user_name=user_name,
+            rating=rating,
+            comment=comment,
         )
         pass
         # ============ Application 課題Lv2 編集ここまで ============
@@ -268,6 +273,11 @@ def select_reviews_by_product(db: Session, product_id: int, limit: Optional[int]
         # ============ Application 課題Lv2 編集ここから ============
         # TODO: 指定商品IDのレビュー一覧を取得するクエリを作成してください
         query = db.query(
+            Review.product_id,
+            Review.user_name,
+            Review.rating,
+            Review.comment,
+            Review.created_at,
         )
         pass
         # ============ Application 課題Lv2 編集ここまで ============

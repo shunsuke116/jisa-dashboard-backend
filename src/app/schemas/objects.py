@@ -65,6 +65,10 @@ class ReviewCreate(BaseModel):
     """レビュー投稿用スキーマ"""
     # ============ Application 課題Lv2 編集ここから ============
     # TODO: API仕様書を参考にして ReviewCreate スキーマを定義してください
+    product_id: int
+    user_name:str
+    rating:int
+    comment:str
     pass
     # ============ Application 課題Lv2 編集ここまで ============
 
@@ -73,6 +77,9 @@ class ReviewDisplayed(BaseModel):
     """レビュー表示用スキーマ"""
     # ============ Application 課題Lv2 編集ここから ============
     # TODO: API仕様書を参考にして ReviewDisplayed スキーマを定義してください
+    product_id:int
+    limit:int
+    offset:int
     pass
     # ============ Application 課題Lv2 編集ここまで ============
     class Config:
