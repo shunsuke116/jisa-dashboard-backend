@@ -9,10 +9,10 @@ import csv
 import requests
 import json
 import base64
-import os        
+import os
 import boto3
 from PIL import Image
-from io import BytesIO     
+from io import BytesIO
 
 from fastapi import (
     APIRouter,
@@ -51,6 +51,7 @@ from src.db import initialize
 from src.db.database import engine
 
 import logging
+
 logger = logging.getLogger(__name__)
 # ---------------編集ここまで---------------
 
@@ -61,34 +62,34 @@ router = APIRouter()
 def compress_image(image_data: bytes, max_width: int = 200, quality: int = 60) -> bytes:
     """
     画像を圧縮してサイズを削減する
-    
+
     Args:
         image_data: 元の画像バイナリデータ
         max_width: 最大幅（ピクセル）
         quality: JPEG品質（1-100、低いほど圧縮率が高い）
-    
+
     Returns:
         圧縮された画像のバイナリデータ
     """
     try:
         # バイナリデータからPIL Imageオブジェクトを作成
         img = Image.open(BytesIO(image_data))
-        
+
         # RGBモードに変換（JPEG保存のため）
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+
         # アスペクト比を維持してリサイズ
         if img.width > max_width:
             ratio = max_width / img.width
             new_height = int(img.height * ratio)
             img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
-        
+
         # メモリ上で圧縮
         output = BytesIO()
-        img.save(output, format='JPEG', quality=quality, optimize=True)
+        img.save(output, format="JPEG", quality=quality, optimize=True)
         compressed_data = output.getvalue()
-        
+
         return compressed_data
     except Exception as e:
         logger.error(f"Image compression error: {e}")
@@ -109,7 +110,8 @@ def search_delivery_history(db: Session = Depends(get_db), limit: int = None):
 
     # レスポンスデータ作成
     response = ResponseModel[List[DeliveryHistoryDisplayed]](
-        result_code="N001", result_msg="正常終了", result_content=data)
+        result_code="N001", result_msg="正常終了", result_content=data
+    )
 
     return response
 
@@ -134,10 +136,7 @@ def get_CO2_amount_summary(db: Session = Depends(get_db)):
     current = datetime.datetime.now(tz_jst)
 
     # 今日の開始(兼前日の終了)
-    today_start = datetime.datetime(current.year,
-                                    current.month,
-                                    current.day,
-                                    tzinfo=tz_jst)
+    today_start = datetime.datetime(current.year, current.month, current.day, tzinfo=tz_jst)
 
     # 前日の開始
     yesterday_start = today_start - datetime.timedelta(days=1)
@@ -150,25 +149,20 @@ def get_CO2_amount_summary(db: Session = Depends(get_db)):
     last_week_start = this_week_start - datetime.timedelta(days=7)
 
     # 今月の開始(兼前月の終了)
-    this_month_start = datetime.datetime(current.year,
-                                         current.month,
-                                         1,
-                                         tzinfo=tz_jst)
+    this_month_start = datetime.datetime(current.year, current.month, 1, tzinfo=tz_jst)
 
     # 前月の開始
     last_month_year = current.year - 1 if current.month == 1 else current.year
     last_month = 12 if current.month == 1 else current.month - 1
-    last_month_start = datetime.datetime(last_month_year,
-                                         last_month,
-                                         1,
-                                         tzinfo=tz_jst)
+    last_month_start = datetime.datetime(last_month_year, last_month, 1, tzinfo=tz_jst)
 
     # store_site_id に 0～99 をセットし100回取得する
     for store_site_id in range(100):
 
         # 先月頭から現在までの配達履歴リスト取得
         target_delivery_history_list = cruds.select_delivery_history_by_period(
-            db, last_month_start, current, store_site_id)
+            db, last_month_start, current, store_site_id
+        )
         if target_delivery_history_list is None:
             raise SqlExecutionException()
 
@@ -213,8 +207,7 @@ def get_CO2_amount_summary(db: Session = Depends(get_db)):
     return response
 
 
-@router.get("/get-path-coordinate",
-            response_model=ResponseModel[List[TownCoordinate]])
+@router.get("/get-path-coordinate", response_model=ResponseModel[List[TownCoordinate]])
 def get_path_coordinate_by_order_id(db: Session = Depends(get_db), order_id: str = None):
 
     # 経由点の緯度経度情報のリスト
@@ -233,14 +226,14 @@ def get_path_coordinate_by_order_id(db: Session = Depends(get_db), order_id: str
 
     # 経路IDから経由点の緯度経度情報へ変換
     for town_id in town_ids_in_route:
-        town = list(filter(lambda row: int(row["town_id"]) == town_id,
-                           towns))[0]
+        town = list(filter(lambda row: int(row["town_id"]) == town_id, towns))[0]
         path_coordinate.append(
             TownCoordinate(
                 town_id=town_id,
                 latitude=float(town["lat"]),
                 longitude=float(town["lon"]),
-            ))
+            )
+        )
 
     # レスポンスデータ作成
     response = ResponseModel[List[TownCoordinate]](
@@ -267,9 +260,7 @@ def conversation(user_input: str, db: Session = Depends(get_db)):
     }
 
     # GETリクエスト
-    category_api_response = requests.get(category_api_url,
-                                         params=category_api_params,
-                                         verify=False).json()
+    category_api_response = requests.get(category_api_url, params=category_api_params, verify=False).json()
 
     classification = category_api_response.get("classification", "Unknown")
 
@@ -292,12 +283,12 @@ def conversation(user_input: str, db: Session = Depends(get_db)):
     # ~~~~~~~~~~~~~~~~~~~~~
 
     # 応答用データ作成
-    response_data = ConversationDisplayed(input_msg=user_input,
-                                          response=conversation_result)
+    response_data = ConversationDisplayed(input_msg=user_input, response=conversation_result)
 
     # レスポンスデータ作成
     response = ResponseModel[ConversationDisplayed](
-        result_code="N001", result_msg="正常終了", result_content=response_data)
+        result_code="N001", result_msg="正常終了", result_content=response_data
+    )
 
     return response
 
@@ -307,16 +298,16 @@ def conversation(user_input: str, db: Session = Depends(get_db)):
     response_model=ResponseModel[str],
 )
 def get_product_list_init(db: Session = Depends(get_db)):
-    #for sqlite initialization
+    # for sqlite initialization
     initialize.create_tables(engine=engine, checkfirst=True)
     initialize.initialize_table(engine, checkfirst=True)
     result = cruds.initialize_table(db=db)
     result_loacal = cruds.create_product_item_initialize(db=db)
     response_message = result
-    
+
     if result is None:
         raise SqlExecutionException()
-    
+
     # レスポンスデータ作成
     response = ResponseModel[str](
         result_code="N001",
@@ -336,25 +327,27 @@ def get_product_list_all(db: Session = Depends(get_db)):
     product_list_result = cruds.select_product_all(db=db)
     if product_list_result is None:
         raise SqlExecutionException()
-    
+
     # 画像データをbase64にエンコード
     product_base64_image_result = []
     for product in product_list_result:
-        product_base64_image_result.append(Product(
-            product_id = product["product_id"],
-            product_name = product["product_name"],
-            store_name = product["store_name"],
-            product_price = product["product_price"],
-            product_image = base64.b64encode(product["product_image"])
-        ))
-    
+        product_base64_image_result.append(
+            Product(
+                product_id=product["product_id"],
+                product_name=product["product_name"],
+                store_name=product["store_name"],
+                product_price=product["product_price"],
+                product_image=base64.b64encode(product["product_image"]),
+            )
+        )
+
     # レスポンスデータ作成
     response = ResponseModel[List[Product]](
         result_code="N001",
         result_msg="正常終了",
         result_content=product_base64_image_result,
     )
-    
+
     return response
 
 
@@ -367,14 +360,14 @@ def get_product_list_info(db: Session = Depends(get_db), offset: int = 0, limit:
     product_info_list_result = cruds.select_product_info(db=db, offset=offset, limit=limit)
     if product_info_list_result is None:
         raise SqlExecutionException()
-    
+
     # レスポンスデータ作成
     response = ResponseModel[List[ProductInfo]](
         result_code="N001",
         result_msg="正常終了",
         result_content=product_info_list_result,
     )
-    
+
     return response
 
 
@@ -382,37 +375,33 @@ def get_product_list_info(db: Session = Depends(get_db), offset: int = 0, limit:
     "/get-product-list/image",
     response_model=ResponseModel[List[ProductImage]],
 )
-def get_product_list_image(product_ids: List[int]= Query(...), db: Session = Depends(get_db)):
+def get_product_list_image(product_ids: List[int] = Query(...), db: Session = Depends(get_db)):
     # DBから画像データを取得
     product_image_result = cruds.select_product_image_by_id(product_ids=product_ids, db=db)
     if product_image_result is None:
         raise SqlExecutionException()
-    
+
     # 画像データを圧縮してbase64にエンコード
     product_base64_image_result = []
     for product in product_image_result:
         # 画像がNoneの場合はスキップまたはNoneを設定
         if product["product_image"] is None:
-            product_base64_image_result.append(ProductImage(
-                product_id = product["product_id"],
-                product_image = None
-            ))
+            product_base64_image_result.append(ProductImage(product_id=product["product_id"], product_image=None))
         else:
             # 画像を圧縮（幅200px、品質60%）
             compressed_image = compress_image(product["product_image"], max_width=200, quality=60)
-            
-            product_base64_image_result.append(ProductImage(
-                product_id = product["product_id"],
-                product_image = base64.b64encode(compressed_image)
-            ))
-    
+
+            product_base64_image_result.append(
+                ProductImage(product_id=product["product_id"], product_image=base64.b64encode(compressed_image))
+            )
+
     # レスポンスデータ作成
     response = ResponseModel[List[ProductImage]](
         result_code="N001",
         result_msg="正常終了",
         result_content=product_base64_image_result,
     )
-    
+
     return response
 
 
@@ -421,17 +410,14 @@ def get_product_list_image(product_ids: List[int]= Query(...), db: Session = Dep
     response_model=ResponseModel[str],
 )
 def order(background_tasks: BackgroundTasks, db: Session = Depends(get_db), product_id: int = 0, order_num: int = 0):
-    # 業務処理を実行 
+    # 業務処理を実行
     background_tasks.add_task(create_order_item_in_background, db, product_id, order_num)
 
     # レスポンスデータ作成
-    response = ResponseModel[str](
-        result_code="N001",
-        result_msg="正常終了",
-        result_content="注文を受け付けました。"
-    )
+    response = ResponseModel[str](result_code="N001", result_msg="正常終了", result_content="注文を受け付けました。")
 
     return response
+
 
 # 関数は適宜追加可能
 def create_order_item_in_background(db: Session, product_id: int, order_num: int):
@@ -443,11 +429,11 @@ def create_order_item_in_background(db: Session, product_id: int, order_num: int
     response_model=ResponseModel[List[Order]],
 )
 def get_order_all(db: Session = Depends(get_db)):
-    #DBからデータを取得
+    # DBからデータを取得
     product_list_result = cruds.select_order_all(db=db)
     if product_list_result is None:
         raise SqlExecutionException()
-    
+
     # レスポンスデータ作成
     response = ResponseModel[List[Order]](
         result_code="N001",
@@ -460,6 +446,7 @@ def get_order_all(db: Session = Depends(get_db)):
 
 # =============== Application 課題Lv2: レビュー関連のAPI ===============
 
+
 @router.post(
     "/review/add",
     response_model=ResponseModel[int],
@@ -469,20 +456,20 @@ def post_review_add(review: ReviewCreate, db: Session = Depends(get_db)):
     レビューを追加する。成功時は result_content に review_id を返却する。
     """
     logger.info(f"POST /review/add called. product_id={review.product_id}, user_name={review.user_name}")
-    
+
     # ============ Application 課題Lv2 編集ここから ============
     # TODO: cruds.create_review を呼び出してレビューを登録してください
     review_id = cruds.create_review(
-        db=db,
+        db,
         product_id=review.product_id,
         user_name=review.user_name,
         rating=review.rating,
         comment=review.comment,
     )
-    
+
     if review_id is None:
         raise SqlExecutionException()
-    
+
     # TODO: レスポンスデータを作成してください
     response = ResponseModel[int](
         result_code="N001",
@@ -490,7 +477,7 @@ def post_review_add(review: ReviewCreate, db: Session = Depends(get_db)):
         result_content=review_id,
     )
     # ============ Application 課題Lv2 編集ここまで ============
-    
+
     logger.info(f"POST /review/add success. review_id={review_id}")
     return response
 
@@ -503,17 +490,17 @@ def get_review_list(
     product_id: int = Query(..., description="商品ID"),
     limit: Optional[int] = Query(None, description="取得件数上限"),
     offset: Optional[int] = Query(None, description="取得開始位置"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     指定商品IDのレビュー一覧を取得する。
     """
     logger.info(f"GET /review/list called. product_id={product_id}, limit={limit}, offset={offset}")
-    
+
     # ============ Application 課題Lv2 編集ここから ============
     # TODO: cruds.select_reviews_by_product を呼び出してレビュー一覧を取得してください
     reviews = cruds.select_reviews_by_product(
-        db,
+        db=db,
         product_id=product_id,
         limit=limit,
         offset=offset,
@@ -524,31 +511,30 @@ def get_review_list(
 
     # TODO: レスポンスデータを作成してください
     response = ResponseModel[List[ReviewDisplayed]](
-            result_code="N001",
-            result_msg="正常終了",
-            result_content=reviews,
+        result_code="N001",
+        result_msg="正常終了",
+        result_content=reviews,
     )
     # ============ Application 課題Lv2 編集ここまで ============
-    
+
     logger.info(f"GET /review/list success. count={len(reviews)}")
     return response
+
 
 # =============== レビュー関連のAPIここまで ===============
 
 
 # =============== Application 課題Lv3: AI要約API ===============
 
+
 @router.post(
     "/ai/review-summary",
     response_model=ResponseModel[dict],
 )
-async def get_ai_review_summary(
-    product_id: int = Query(..., description="商品ID"),
-    db: Session = Depends(get_db)
-):
+async def get_ai_review_summary(product_id: int = Query(..., description="商品ID"), db: Session = Depends(get_db)):
     """
     指定商品のレビューをAI要約する。
-    
+
     処理フロー:
     1. DBから対象商品のレビューを取得
     2. レビューデータをプロンプト形式に整形
@@ -556,112 +542,89 @@ async def get_ai_review_summary(
     4. AI要約結果を返却
     """
     logger.info(f"POST /ai/review-summary called. product_id={product_id}")
-    
+
     try:
         # ============ Application 課題Lv3 編集ここから ============
         # Step1: レビューデータをDBから取得
         # TODO: cruds.select_reviews_by_product でレビューを取得してください（最大50件）
-        reviews = cruds.select_reviews_by_product(
-            )
+        reviews = cruds.select_reviews_by_product()
         # ============ Application 課題Lv3 編集ここまで ============
         if reviews is None:
             raise SqlExecutionException()
-        
+
         if len(reviews) == 0:
             logger.info("No reviews found for this product")
-        # ============ Application 課題Lv3 編集ここから ============
+            # ============ Application 課題Lv3 編集ここから ============
             # TODO: レビューが0件の場合のレスポンスを作成してください
-            response = ResponseModel[dict](
-                
-            )
-        # ============ Application 課題Lv3 編集ここまで ============
+            response = ResponseModel[dict]()
+            # ============ Application 課題Lv3 編集ここまで ============
             logger.info("No reviews found for this product")
             return response
-        
+
         # Step2: プロンプトを生成
         # TODO: create_review_summary_prompt を実装してください
         prompt = create_review_summary_prompt(reviews, product_id)
 
         # Step3: Lambda関数を呼び出す (Function URL経由)
         lambda_url = LambdaConfigurations.lambda_function_arn
-        
+
         if not lambda_url:
-            raise HTTPException(
-                status_code=500,
-                detail="Lambda関数のURLが設定されていません"
-            )
-        
+            raise HTTPException(status_code=500, detail="Lambda関数のURLが設定されていません")
+
         # HTTPSリクエストで呼び出し (Function URL形式)
         # Function URLはJSONボディをevent['body']に文字列として格納する
-        payload = {
-            "prompt": prompt
-        }
-        
+        payload = {"prompt": prompt}
+
         try:
-            lambda_response = requests.post(
-                lambda_url,
-                json=payload,
-                verify=False,
-                timeout=30
-            )
+            lambda_response = requests.post(lambda_url, json=payload, verify=False, timeout=30)
             lambda_response.raise_for_status()
             response_payload = lambda_response.json()
         except requests.RequestException as e:
             logger.error(f"Lambda呼び出しエラー: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Lambda関数の呼び出しに失敗しました: {str(e)}"
-            )
-        
-        logger.info(f"Lambda response: {response_payload}")
-        
-        # レスポンス解析 (Function URLは直接JSONを返す)
-        if response_payload.get('result_code') == 'N001':
-            summary = response_payload['result_content']['summary']
-            # ============ Application 課題Lv3 編集ここから ============                
-            # TODO: 成功時のレスポンスを作成してください
-            response = ResponseModel[dict](
+            raise HTTPException(status_code=500, detail=f"Lambda関数の呼び出しに失敗しました: {str(e)}")
 
-            )
-            # ============ Application 課題Lv3 編集ここまで ============ 
+        logger.info(f"Lambda response: {response_payload}")
+
+        # レスポンス解析 (Function URLは直接JSONを返す)
+        if response_payload.get("result_code") == "N001":
+            summary = response_payload["result_content"]["summary"]
+            # ============ Application 課題Lv3 編集ここから ============
+            # TODO: 成功時のレスポンスを作成してください
+            response = ResponseModel[dict]()
+            # ============ Application 課題Lv3 編集ここまで ============
             logger.info(f"AI summary generated successfully. review_count={len(reviews)}")
             return response
         else:
-            error_msg = response_payload.get('error_message', 'Unknown error')
-            raise HTTPException(
-                status_code=500,
-                detail=f"Lambda関数がエラーを返しました: {error_msg}"
-            )
-        
+            error_msg = response_payload.get("error_message", "Unknown error")
+            raise HTTPException(status_code=500, detail=f"Lambda関数がエラーを返しました: {error_msg}")
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"AI review summary error: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"AI要約の生成に失敗しました: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"AI要約の生成に失敗しました: {str(e)}")
 
 
 def create_review_summary_prompt(reviews, product_id: int) -> str:
     """
     レビューデータからAI要約用のプロンプトを生成する。
-    
+
     Args:
         reviews: レビューデータのリスト
         product_id: 商品ID
-        
+
     Returns:
         str: プロンプト文字列
     """
     # ============ Application 課題Lv3 編集ここから ============
     # TODO: レビュー情報を整形してください（AI向けプロンプト用に）
-    
+
     # TODO: 生成AIに送る適切なプロンプトを作成してください
     prompt = ""
-    
+
     # ============ Application 課題Lv3 編集ここまで ============
-    
+
     return prompt
+
 
 # =============== AI要約APIここまで ===============

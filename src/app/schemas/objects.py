@@ -2,7 +2,7 @@ import datetime
 
 from typing import Any, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DeliveryHistoryDisplayed(BaseModel):
@@ -32,9 +32,11 @@ class TownCoordinate(BaseModel):
     latitude: float
     longitude: float
 
+
 class ConversationDisplayed(BaseModel):
     input_msg: str
     response: str
+
 
 class Product(BaseModel):
     product_id: int
@@ -43,15 +45,18 @@ class Product(BaseModel):
     product_price: int
     product_image: str
 
+
 class ProductInfo(BaseModel):
     product_id: int
     product_name: str
     store_name: str
     product_price: int
 
+
 class ProductImage(BaseModel):
     product_id: int
     product_image: Optional[str]
+
 
 class Order(BaseModel):
     id: int
@@ -61,27 +66,33 @@ class Order(BaseModel):
 
 # ============ Application 課題Lv2: レビュー関連スキーマ ============
 
+
 class ReviewCreate(BaseModel):
     """レビュー投稿用スキーマ"""
+
     # ============ Application 課題Lv2 編集ここから ============
     # TODO: API仕様書を参考にして ReviewCreate スキーマを定義してください
     product_id: int
-    user_name:str
-    rating:int
-    comment:str
-    pass
+    user_name: str
+    rating: int = Field(..., ge=1, le=5)
+    comment: Optional[str]
     # ============ Application 課題Lv2 編集ここまで ============
 
 
 class ReviewDisplayed(BaseModel):
     """レビュー表示用スキーマ"""
+
     # ============ Application 課題Lv2 編集ここから ============
     # TODO: API仕様書を参考にして ReviewDisplayed スキーマを定義してください
-    product_id:int
-    limit:int
-    offset:int
-    pass
+    review_id: int
+    user_name: str
+    rating: int
+    comment: Optional[str]
+    created_at: datetime.datetime
+
     # ============ Application 課題Lv2 編集ここまで ============
     class Config:
         orm_mode = True
+
+
 # ============ レビュー関連スキーマここまで ============

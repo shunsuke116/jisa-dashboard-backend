@@ -13,7 +13,5 @@ class SqlExecutionException(Exception):
 def dbaccess_exception_handler(request: Request, exc: SqlExecutionException):
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=jsonable_encoder(
-            ResponseModel(result_code="E501", result_msg="データベースアクセスエラー")
-        ),
+        content=jsonable_encoder(ResponseModel(result_code="E501", result_msg="データベースアクセスエラー")),
     )
